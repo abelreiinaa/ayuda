@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Encuesta para mi proyecto final</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#12152a;--panel:#1c2040;--line:#2f3566;--tx:#e8eaf6;--mut:#9aa0c8;--ac:#ffb454;--ok:#7ee0c3;--er:#ff6b81;--mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace}
+*{box-sizing:border-box}
+body{margin:0;padding:16px;background:var(--bg);color:var(--tx);font:16px/1.55 system-ui,-apple-system,"Segoe UI",sans-serif}
+main{max-width:640px;margin:0 auto}
+.tab{display:flex;justify-content:space-between;padding:8px 0;margin-bottom:16px;border-bottom:1px solid var(--line);font:14px var(--mono);color:var(--mut)}
+.tab b{font-weight:400;color:var(--ac)}
+h1,h2{font-family:var(--mono);line-height:1.3}
+h1{font-size:22px;margin:8px 0}
+h2{font-size:18px;color:var(--ok);margin:0 0 4px}
+.sub{color:var(--mut);margin:0 0 16px}
+.bar{height:4px;margin-bottom:16px;background:var(--line);border-radius:2px}
+.bar i{display:block;height:100%;width:0;background:var(--ac);border-radius:2px;transition:width .3s}
+fieldset{margin:0 0 14px;padding:14px;background:var(--panel);border:1px solid var(--line);border-radius:8px}
+legend{padding:0 6px;font-weight:600}
+.hint{margin:0 0 8px;font-size:14px;color:var(--mut)}
+label.o{display:block;padding:8px 10px;border-radius:6px;cursor:pointer}
+label.o:hover{background:#262b55}
+input[type=radio],input[type=checkbox]{margin-right:8px;accent-color:var(--ac)}
+textarea,input[type=text]{width:100%;padding:10px;background:var(--bg);color:var(--tx);border:1px solid var(--line);border-radius:6px;font:inherit}
+:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
+.row{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;padding:8px 0;border-top:1px solid var(--line)}
+.row span{flex:1 1 200px}
+.sc{display:flex;gap:6px}
+.chip{position:relative;width:40px;height:40px;display:grid;place-items:center;border:1px solid var(--line);border-radius:6px;cursor:pointer;font-family:var(--mono)}
+.chip input{position:absolute;opacity:0;inset:0;margin:0;cursor:pointer}
+.chip:has(input:checked){background:var(--ac);border-color:var(--ac);color:var(--bg);font-weight:700}
+.chip:has(input:focus-visible){outline:2px solid var(--tx)}
+.nav{display:flex;gap:10px;justify-content:space-between;margin-top:8px}
+button{padding:12px 20px;border:0;border-radius:6px;font:700 15px var(--mono);cursor:pointer;background:var(--ac);color:var(--bg)}
+button.ghost{background:transparent;color:var(--tx);border:1px solid var(--line)}
+button:disabled{opacity:.5;cursor:wait}
+.err{min-height:1.5em;color:var(--er);font-size:14px}
+.choice{display:grid;gap:12px;margin-top:16px}
+.choice a{display:block;padding:16px;background:var(--panel);border:1px solid var(--line);border-radius:8px;color:var(--tx);text-decoration:none;font-family:var(--mono)}
+.choice a:hover{border-color:var(--ac)}
+.choice small{display:block;margin-top:4px;color:var(--mut);font-family:system-ui,sans-serif}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<main>
+  <div class="tab"><span><b>encuesta.js</b></span><span id="step"></span></div>
+  <div id="app"></div>
+</main>
+<script>
+// ====== CONFIGURA ESTO ======
+const ENDPOINT = 'https://script.google.com/macros/s/AKfycbyZUoJqm7uHXakpa_nOBp_6a6W1i8SLSO40GCbr4T72bR-sPfaESNDSc-MopYyPGq3r/exec';
+const AUTOR = '[Abel]';
+// ============================
+
+const slug = s => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '_').slice(0, 24);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+const IDEAS_AMIGOS = ['Reservas o citas para un negocio o club','Gastos compartidos entre amigos','Organizador de quedadas y eventos','Seguimiento de hábitos o deporte','Inventario o colección (cómics, cartas, ropa...)','Apuntes y estudio en grupo','Compraventa de segunda mano local','Recetas y planificador de comidas'];
+const IDEAS_FAMILIA = ['Reservas o citas','Inventario o stock','Gestión de pedidos','Gestión de clientes o socios','Control de gastos','Agenda familiar o de equipo','Facturas y presupuestos'];
+
+const FORMS = {
+  amigos: {
+    title: '// Bug report: ayúdame a encontrar el bug de tu vida digital',
+    intro: `console.log("Hola, soy ${AUTOR}. Busco tema para mi proyecto final de DAW y necesito tu cerebro. Son 3 minutos, sin compilar nada.")`,
+    sections: [
+      {t:'git init', s:'Contexto', qs:[
+        {id:'ocupacion', q:'¿A qué te dedicas?', type:'radio', o:['Estudio','Trabajo','Ambas','Otra']},
+        {id:'aficiones', q:'¿Qué te gusta hacer en tu tiempo libre?', type:'multi', o:['Deporte','Música','Videojuegos','Viajes','Cocina','Cine y series','Animales','Moda','Otra']}]},
+      {t:'git blame', s:'¿Quién tiene la culpa de tus líos?', qs:[
+        {id:'organiza', q:'¿Qué organizas en grupo con más frecuencia?', type:'multi', o:['Quedadas','Gastos compartidos','Equipos deportivos','Viajes','Trabajos de clase','Cumpleaños y eventos','Nada']},
+        {id:'como', q:'¿Cómo lo organizas ahora?', type:'multi', o:['WhatsApp','Excel','Papel','Alguna app','A lo loco']},
+        {id:'dificultad', q:'¿Cuánto te cuesta organizarlo?', type:'scale', lo:'return success', hi:'Fatal error'}]},
+      {t:'bug report', s:'Lo que falla', qs:[
+        {id:'app_molesta', q:'¿Qué app o web te fastidia más y por qué?', type:'text'},
+        {id:'pierdes_tiempo', q:'¿Qué te hace perder más tiempo a la semana?', type:'multi', o:['Buscar cosas','Organizar horarios','Gestionar pagos','Recordar citas','Apuntes y estudio','Nada']},
+        {id:'feature_request', q:'Si pudieras pedir una app que resolviera un problema de tu vida, ¿cuál sería?', type:'long'}]},
+      {t:'npm install idea', s:'Vota las ideas', qs:[
+        {id:'idea', q:'Puntúa cada idea', type:'matrix', items:IDEAS_AMIGOS, lo:'la borro', hi:'la quiero ya'},
+        {id:'usaria_semana', q:'¿Cuál usarías más de una vez por semana?', type:'radio', o:[...IDEAS_AMIGOS,'Ninguna']}]},
+      {t:'git deploy', s:'Compromiso', qs:[
+        {id:'tester', q:'¿Serías mi tester cuando tenga una versión?', type:'radio', o:['Sí','Quizá','No']},
+        {id:'abandono', q:'¿Qué te haría dejar de usar una app?', type:'multi', o:['Anuncios','Registro largo','Va lenta','Pide demasiados datos','No me aporta nada']},
+        {id:'contacto', q:'Tu nombre o contacto (opcional, por si quiero preguntarte algo)', type:'text'}]}
+    ]
+  },
+  familia: {
+    title: '// Consulta al cliente: necesito tu requisito principal',
+    intro: 'Hola, estoy eligiendo el proyecto final de mi ciclo y necesito un problema real que resolver. Tu experiencia es mi mejor documentación. Son 5 minutos.',
+    sections: [
+      {t:'requirements', s:'Contexto', qs:[
+        {id:'sector', q:'¿A qué te dedicas o en qué sector trabajas?', type:'text'},
+        {id:'negocio', q:'¿Tienes o conoces un negocio, club o asociación?', type:'radio', o:['Tengo uno','Conozco alguno','No']}]},
+      {t:'bugs', s:'El día a día', qs:[
+        {id:'tareas_manual', q:'¿Qué tareas haces a mano, en papel o en Excel?', type:'multi', o:['Citas y reservas','Facturas y presupuestos','Stock o inventario','Pedidos','Clientes y contactos','Horarios y turnos','Gastos de casa','Otras']},
+        {id:'tiempo_semana', q:'¿Cuánto tiempo a la semana te llevan?', type:'radio', o:['Menos de 1 h','1 a 3 h','3 a 6 h','Más de 6 h']},
+        {id:'se_olvida', q:'¿Qué se te olvida o se desorganiza con más frecuencia?', type:'long'},
+        {id:'error_repetido', q:'¿Qué error se repite? Por ejemplo, dobles reservas, stock mal contado o avisos que no llegan.', type:'long'}]},
+      {t:'legacy code', s:'Herramientas actuales', qs:[
+        {id:'herramientas', q:'¿Qué programas o apps usas para gestionar esto?', type:'text'},
+        {id:'molestias', q:'¿Qué es lo que más te molesta de ellos?', type:'long'},
+        {id:'soltura', q:'¿Cómo de cómodo estás con la tecnología?', type:'scale', lo:'me cuesta', hi:'me defiendo bien'}]},
+      {t:'feature request', s:'Tu ayudante ideal', qs:[
+        {id:'ayudante', q:'Si tuvieras un ayudante para resolver un solo problema, ¿cuál?', type:'long'},
+        {id:'idea', q:'Puntúa cada idea', type:'matrix', items:IDEAS_FAMILIA, lo:'no me sirve', hi:'la necesito'}]},
+      {t:'beta testing', s:'Últimos datos', qs:[
+        {id:'tester', q:'¿Probarías una versión de prueba y me darías tu opinión?', type:'radio', o:['Sí','Quizá','No']},
+        {id:'conocidos', q:'¿Conoces a alguien a quien le vendría bien algo así? (contacto opcional)', type:'text'}]}
+    ]
+  }
+};
+
+const app = document.getElementById('app'), stepEl = document.getElementById('step');
+const key = new URLSearchParams(location.search).get('f');
+const F = FORMS[key];
+
+if (!F) {
+  app.innerHTML = `<h1>// ¿Quién eres?</h1><p class="sub">Elige tu perfil para cargar la encuesta correcta.</p>
+  <div class="choice"><a href="?f=amigos">Amigo o amiga<small>Encuesta de 3 minutos</small></a><a href="?f=familia">Familia<small>Encuesta de 5 minutos</small></a></div>`;
+} else {
+  const field = q => {
+    const n = esc(q.id);
+    if (q.type === 'radio') return q.o.map(o => `<label class="o"><input type="radio" name="${n}" value="${esc(o)}">${esc(o)}</label>`).join('');
+    if (q.type === 'multi') return q.o.map(o => `<label class="o"><input type="checkbox" name="${n}" value="${esc(o)}">${esc(o)}</label>`).join('');
+    if (q.type === 'text') return `<input type="text" name="${n}" maxlength="200" aria-label="${esc(q.q)}">`;
+    if (q.type === 'long') return `<textarea name="${n}" rows="4" maxlength="1000" aria-label="${esc(q.q)}"></textarea>`;
+    const chips = nm => [1,2,3,4,5].map(v => `<label class="chip"><input type="radio" name="${nm}" value="${v}" aria-label="${v}">${v}</label>`).join('');
+    const hint = `<p class="hint">1 = ${esc(q.lo)}, 5 = ${esc(q.hi)}</p>`;
+    if (q.type === 'scale') return hint + `<div class="sc">${chips(n)}</div>`;
+    return hint + q.items.map(it => `<div class="row"><span>${esc(it)}</span><div class="sc">${chips(q.id + '_' + slug(it))}</div></div>`).join('');
+  };
+  const names = q => q.type === 'matrix' ? q.items.map(it => q.id + '_' + slug(it)) : [q.id];
+  const required = q => ['radio','multi','scale','matrix'].includes(q.type);
+
+  app.innerHTML = `<h1>${esc(F.title)}</h1><p class="sub">${esc(F.intro)}</p><div class="bar"><i id="fill"></i></div>
+  <form id="f" novalidate>${F.sections.map((s, i) => `<section hidden data-i="${i}"><h2>// ${esc(s.t)}</h2><p class="sub">${esc(s.s)}</p>
+  ${s.qs.map(q => `<fieldset><legend>${esc(q.q)}</legend>${field(q)}</fieldset>`).join('')}</section>`).join('')}
+  <p class="err" id="err" role="alert"></p>
+  <div class="nav"><button type="button" class="ghost" id="back">Atrás</button><button type="button" id="next">Siguiente</button></div></form>
+  <section id="done" hidden><h2>// 200 OK</h2><p>Respuestas enviadas. Gracias por ayudarme a elegir proyecto.</p></section>`;
+
+  const form = document.getElementById('f'), secs = [...form.querySelectorAll('section')];
+  const err = document.getElementById('err'), next = document.getElementById('next'), back = document.getElementById('back');
+  let cur = 0;
+
+  const show = i => {
+    cur = i;
+    secs.forEach((s, j) => s.hidden = j !== i);
+    back.hidden = i === 0;
+    next.textContent = i === secs.length - 1 ? 'Enviar respuestas' : 'Siguiente';
+    document.getElementById('fill').style.width = ((i + 1) / secs.length * 100) + '%';
+    stepEl.textContent = `${i + 1}/${secs.length}`;
+    err.textContent = '';
+    window.scrollTo(0, 0);
+  };
+
+  const valid = () => F.sections[cur].qs.every(q => !required(q) || names(q).every(n => form.querySelector(`[name="${n}"]:checked`)));
+
+  const send = async () => {
+    if (ENDPOINT.startsWith('PEGA_')) { err.textContent = 'Falta configurar ENDPOINT en index.html.'; return; }
+    const data = new FormData(form), body = new URLSearchParams();
+    for (const k of new Set(data.keys())) body.set(k, data.getAll(k).join(', '));
+    body.set('formulario', key);
+    body.set('fecha', new Date().toISOString());
+    next.disabled = true;
+    try {
+      await fetch(ENDPOINT, {method: 'POST', mode: 'no-cors', body});
+      form.hidden = true;
+      document.getElementById('done').hidden = false;
+      document.querySelector('.bar').hidden = true;
+      stepEl.textContent = 'enviado';
+    } catch (e) {
+      err.textContent = 'No se pudo enviar. Revisa tu conexión y vuelve a intentarlo.';
+      next.disabled = false;
+    }
+  };
+
+  next.onclick = () => {
+    if (!valid()) { err.textContent = 'Responde todas las preguntas de selección antes de continuar.'; return; }
+    cur === secs.length - 1 ? send() : show(cur + 1);
+  };
+  back.onclick = () => show(cur - 1);
+  show(0);
+}
+</script>
+</body>
+</html>
