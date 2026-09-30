@@ -135,7 +135,7 @@ if (!F) {
     return hint + q.items.map(it => `<div class="row"><span>${esc(it)}</span><div class="sc">${chips(q.id + '_' + slug(it))}</div></div>`).join('');
   };
   const names = q => q.type === 'matrix' ? q.items.map(it => q.id + '_' + slug(it)) : [q.id];
-  const required = q => ['radio','multi','scale','matrix'].includes(q.type);
+  const required = q => ['radio','scale','matrix'].includes(q.type);
 
   app.innerHTML = `<h1>${esc(F.title)}</h1><p class="sub">${esc(F.intro)}</p><div class="bar"><i id="fill"></i></div>
   <form id="f" novalidate>${F.sections.map((s, i) => `<section hidden data-i="${i}"><h2>// ${esc(s.t)}</h2><p class="sub">${esc(s.s)}</p>${s.qs.map(q => `<fieldset><legend>${esc(q.q)}</legend>${field(q)}</fieldset>`).join('')}</section>`).join('')}
@@ -164,7 +164,7 @@ if (!F) {
     if (ENDPOINT.startsWith('PEGA_')) { err.textContent = 'Falta configurar ENDPOINT en index.html.'; return; }
     const data = new FormData(form), body = new URLSearchParams();
     for (const k of new Set(data.keys())) body.set(k, data.getAll(k).join(', '));
-    body.set('formulario', key);
+    body.set('formulario', key || 'familia');
     body.set('fecha', new Date().toISOString());
     next.disabled = true;
     try {
@@ -185,7 +185,7 @@ if (!F) {
   };
 
   next.onclick = () => {
-    if (!valid()) { err.textContent = 'Responde todas las preguntas de selección antes de continuar.'; return; }
+    if (!valid()) { err.textContent = 'Por favor, responde las preguntas de opción única o puntuación antes de continuar.'; return; }
     cur === secs.length - 1 ? send() : show(cur + 1);
   };
   back.onclick = () => show(cur - 1);
